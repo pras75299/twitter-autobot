@@ -8,11 +8,15 @@ load_dotenv()
 def generate_tweet(topic):
     openai.api_key = os.getenv("OPENAI_API_KEY")
     prompt = f"Write a short, engaging tweet about {topic}."
-    
+
     try:
+        # Use the latest API
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
+            model="gpt-3.5-turbo",  # or "gpt-4" if you prefer
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that generates creative tweets."},
+                {"role": "user", "content": prompt}
+            ],
             max_tokens=50,
             temperature=0.7
         )
