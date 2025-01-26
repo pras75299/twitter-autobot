@@ -35,6 +35,7 @@ credentials.json
 config.ini
 tokens.txt
 secrets.py
+test*
 *.log
 
 # Misc
