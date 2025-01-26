@@ -77,7 +77,7 @@ def generate_tweet(topic):
             model="gpt-3.5-turbo",
             messages=[
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Generate content about {topic}. If the topic requires detailed explanation, create a thread (3-5 tweets). Otherwise, create a single engaging tweet. Include relevant emojis and hashtags."}
+            {"role": "user", "content": f"Generate content about {topic}. Create a single engaging tweet. Include relevant emojis and hashtags."}
             ],
             max_tokens=280,  # Increased to accommodate potential thread generation
             temperature=0.8  # Slightly increased for more creative responses
