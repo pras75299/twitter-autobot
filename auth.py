@@ -7,19 +7,20 @@ load_dotenv()
 
 def authenticate():
     # Fetch credentials from .env
+    bearer_token = os.getenv("BEARER_TOKEN")
     api_key = os.getenv("API_KEY")
     api_secret = os.getenv("API_SECRET")
     access_token = os.getenv("ACCESS_TOKEN")
     access_token_secret = os.getenv("ACCESS_TOKEN_SECRET")
 
-    # Authenticate using OAuth 1.0a for posting tweets
-    auth = tweepy.OAuth1UserHandler(api_key, api_secret, access_token, access_token_secret)
-    api = tweepy.API(auth)
+    # Authenticate using tweepy.Client for v2
+    client = tweepy.Client(
+        bearer_token=bearer_token,
+        consumer_key=api_key,
+        consumer_secret=api_secret,
+        access_token=access_token,
+        access_token_secret=access_token_secret
+    )
 
-    try:
-        api.verify_credentials()
-        print("Authentication successful!")
-        return api
-    except Exception as e:
-        print(f"Error during authentication: {e}")
-        return None
+    print("Authentication successful!")
+    return client
