@@ -74,13 +74,13 @@ def generate_tweet(topic):
     try:
         # Use the latest API
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # or "gpt-4" if you prefer
+            model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Generate content about {topic}. If the topic requires detailed explanation, create a thread (3-5 tweets). Otherwise, create a single engaging tweet. Include relevant emojis and hashtags."}
             ],
-            max_tokens=50,
-            temperature=0.7
+            max_tokens=280,  # Increased to accommodate potential thread generation
+            temperature=0.8  # Slightly increased for more creative responses
         )
         tweet = response['choices'][0]['message']['content'].strip()
         return tweet
