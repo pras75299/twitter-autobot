@@ -28,8 +28,11 @@ TOPICS = [
     "Blockchain",
     "Cloud Computing",
     "DevOps",
-    "Cybersecurity",
-    "Data Science",
+    "Tech Humor",
+    "Humor on DSA",
+    "Tip for DSA",
+    "Humor on College Life / School Life",
+    "Corporate Humor"
 ]
 
 def get_random_time():
