@@ -1,7 +1,5 @@
 from schedule_tweets import run_bot
 import logging
-from flask import Flask
-import threading
 
 # Configure logging
 logging.basicConfig(
@@ -12,22 +10,13 @@ logging.basicConfig(
         logging.StreamHandler()               # Log to stdout (Render dashboard)
     ]
 )
-
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "Twitter Autobot is running!"
+logging.getLogger().setLevel(logging.DEBUG)
 
 if __name__ == "__main__":
     try:
         logging.info("Starting autonomous Twitter bot...")
-        # Run bot in background thread
-        bot_thread = threading.Thread(target=run_bot, daemon=True)
-        bot_thread.start()
-        
-        # Start Flask server
-        app.run(host="0.0.0.0", port=8000)
+        # Run bot directly since we don't need threading anymore
+        run_bot()
     except KeyboardInterrupt:
         logging.info("Twitter bot stopped by user.")
         print("Bot stopped by user.")
