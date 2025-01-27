@@ -16,11 +16,10 @@ if __name__ == "__main__":
         logging.info("Starting autonomous Twitter bot...")
         # Run bot directly since we don't need threading anymore
         run_bot()
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as e:
         logging.info("Twitter bot stopped by user.")
         logging.error(f"Twitter bot crashed: {e}")
         print(f"Bot crashed: {e}")
     finally:
-        handler.close()
         logging.shutdown()
         sys.exit(0)
