@@ -1,16 +1,13 @@
 from schedule_tweets import run_bot
 import logging
+import sys
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("tweet_bot.log"),  # Log to local file
-        logging.StreamHandler()               # Log to stdout (Render dashboard)
-    ]
-)
-logging.getLogger().setLevel(logging.DEBUG)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler("tweet_bot.log")
+handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+logger.addHandler(handler)
 
 if __name__ == "__main__":
     try:
@@ -23,3 +20,7 @@ if __name__ == "__main__":
     except Exception as e:
         logging.error(f"Twitter bot crashed: {e}")
         print(f"Bot crashed: {e}")
+    finally:
+        handler.close()
+        logging.shutdown()
+        sys.exit(0)
