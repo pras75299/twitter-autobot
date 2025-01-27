@@ -61,9 +61,11 @@ def post_random_tweet(client):
     """Generate and post a tweet about a random topic."""
     try:
         topic = random.choice(TOPICS)
+        logging.info(f"Generating tweet for topic: {topic}")
         tweet_content = generate_tweet(topic)
         
         if tweet_content:
+            logging.info(f"Generated Tweet: {tweet_content}")
             response = client.create_tweet(text=tweet_content)
             logging.info(f"Tweet posted successfully. ID: {response.data['id']}")
             return True

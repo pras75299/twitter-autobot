@@ -5,9 +5,12 @@ import threading
 
 # Configure logging
 logging.basicConfig(
-    filename="tweet_bot.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("tweet_bot.log"),  # Log to local file
+        logging.StreamHandler()               # Log to stdout (Render dashboard)
+    ]
 )
 
 app = Flask(__name__)
