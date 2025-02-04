@@ -3,7 +3,7 @@ import time
 import random
 import logging
 from generate_tweet import generate_tweet
-from datetime import datetime
+from datetime import datetime, timedelta
 from auth import authenticate
 
 # Configure logging
@@ -16,7 +16,11 @@ logging.basicConfig(
 # Topics to rotate through
 TOPICS = [
     "AI and Machine Learning",
-    "Python Programming",
+    "Tech Humor",
+    "Humor on DSA",
+    "Tip for DSA",
+    "Humor on College",
+    "Humor on Python Programming / Python Programming",
     "Web Development",
     "Software Engineering Tips",
     "Tech Industry News",
@@ -28,34 +32,42 @@ TOPICS = [
     "Blockchain",
     "Cloud Computing",
     "DevOps",
-    "Tech Humor",
-    "Humor on DSA",
-    "Tip for DSA",
-    "Humor on College Life / School Life",
-    "Corporate Humor"
 ]
 
 def get_random_time():
-    """Generate random time between 8 AM and 10 PM."""
-    hour = random.randint(8, 22)
-    minute = random.randint(0, 59)
+    """Generate time with 10-minute intervals from current time between 8 AM and 10 PM."""
+    current_time = datetime.now()
+    current_hour = current_time.hour
+    current_minute = current_time.minute
+
+    # Round up to next 10-minute interval
+    next_minute = ((current_minute + 10) // 10) * 10
+
+    # Adjust hour if minutes roll over
+    hour = (current_hour + (next_minute // 60)) % 24
+    minute = next_minute % 60
+
+    # If time is before 8 AM, start at 8 AM
+    if hour < 8:
+        hour = 8
+        minute = 0
+
+    # If time is after 10 PM, schedule for next day at 8 AM
+    if hour >= 22:
+        hour = 8
+        minute = 0
+
     return f"{hour:02d}:{minute:02d}"
 
-def schedule_tweets(client):
-    """Schedule 15 tweets throughout the day."""
-    # Clear any existing jobs
-    schedule.clear()
-    
-    # Create 15 randomly spaced tweets
-    posted_times = set()
-    for _ in range(15):
-        while True:
-            time_str = get_random_time()
-            if time_str not in posted_times:
-                posted_times.add(time_str)
-                schedule.every().day.at(time_str).do(post_random_tweet, client=client)
-                logging.info(f"Scheduled tweet for {time_str}")
-                break
+def schedule_next_tweet(client, last_post_time):
+    """Schedule the next tweet with at least a 10-minute interval."""
+    while True:  # Loop to ensure at least 10-minute gap
+        time_str = get_random_time()
+        if last_post_time is None or (datetime.strptime(time_str, "%H:%M") - last_post_time) >= timedelta(minutes=10):
+            break  # Valid time with at least 10-minute gap found
+    schedule.every().day.at(time_str).do(post_random_tweet, client=client)
+    logging.info(f"Scheduled tweet for {time_str}")
+    return datetime.strptime(time_str, "%H:%M")
 
 def post_random_tweet(client):
     """Generate and post a tweet about a random topic."""
@@ -63,27 +75,29 @@ def post_random_tweet(client):
         topic = random.choice(TOPICS)
         logging.info(f"Generating tweet for topic: {topic}")
         tweet_content = generate_tweet(topic)
-        
+
         if tweet_content:
             logging.info(f"Generated Tweet: {tweet_content}")
             response = client.create_tweet(text=tweet_content)
             logging.info(f"Tweet posted successfully. ID: {response.data['id']}")
-            return True
         else:
             logging.error(f"Failed to generate tweet about {topic}")
-            return False
     except Exception as e:
         logging.error(f"Error in post_random_tweet: {e}")
-        return False
 
 def run_bot():
     """Main bot running function."""
     client = authenticate()
     if client:
         logging.info("Starting Twitter Bot")
-        schedule_tweets(client)
+        last_post_time = None  # Initialize outside the loop
+        for _ in range(15):
+            last_post_time = schedule_next_tweet(client, last_post_time) 
         while True:
             schedule.run_pending()
             time.sleep(60)
     else:
         logging.error("Failed to initialize Twitter client.")
+
+if __name__ == "__main__":
+    run_bot()
