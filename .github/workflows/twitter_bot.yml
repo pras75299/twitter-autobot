@@ -2,14 +2,15 @@ name: Twitter Autobot
 
 on:
   schedule:
-    - cron: "0 */2 * * *" # Run every 2 hours
-  workflow_dispatch: # Allow manual triggering
+    - cron: "0 * * * *" # Runs every hour (adjust as needed)
+  workflow_dispatch: # Allows manual execution from GitHub Actions UI
 
 jobs:
-  run:
+  run-bot:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -23,11 +24,13 @@ jobs:
 
       - name: Run Twitter bot
         env:
-          BEARER_TOKEN: ${{ secrets.BEARER_TOKEN }}
           API_KEY: ${{ secrets.API_KEY }}
           API_SECRET: ${{ secrets.API_SECRET }}
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
           ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
+          BEARER_TOKEN: ${{ secrets.BEARER_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
         run: |
           python main.py
