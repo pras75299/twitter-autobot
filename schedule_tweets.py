@@ -34,40 +34,32 @@ TOPICS = [
     "DevOps",
 ]
 
-def get_random_time():
-    """Generate time with 10-minute intervals from current time between 8 AM and 10 PM."""
-    current_time = datetime.now()
-    current_hour = current_time.hour
-    current_minute = current_time.minute
+def get_next_time(last_post_time):
+    """Calculate next post time with minimum 10-minute gap within 8AM-10PM window"""
+    if last_post_time is None:
+        # Start at 8 AM today
+        base_time = datetime.now().replace(hour=8, minute=0, second=0, microsecond=0)
+        if datetime.now() > base_time:
+            # If current time is past 8AM, start immediately with minimum gap
+            return datetime.now() + timedelta(minutes=10)
+        return base_time
+    else:
+        # Add random interval between 10-60 minutes
+        return last_post_time + timedelta(minutes=random.randint(10, 60))
 
-    # Round up to next 10-minute interval
-    next_minute = ((current_minute + 10) // 10) * 10
+    # Ensure posts stay within 8AM-10PM window
+    next_time = max(next_time, next_time.replace(hour=8, minute=0, second=0))
+    next_time = min(next_time, next_time.replace(hour=22, minute=0, second=0))
+    return next_time
 
-    # Adjust hour if minutes roll over
-    hour = (current_hour + (next_minute // 60)) % 24
-    minute = next_minute % 60
-
-    # If time is before 8 AM, start at 8 AM
-    if hour < 8:
-        hour = 8
-        minute = 0
-
-    # If time is after 10 PM, schedule for next day at 8 AM
-    if hour >= 22:
-        hour = 8
-        minute = 0
-
-    return f"{hour:02d}:{minute:02d}"
-
-def schedule_next_tweet(client, last_post_time):
-    """Schedule the next tweet with at least a 10-minute interval."""
-    while True:  # Loop to ensure at least 10-minute gap
-        time_str = get_random_time()
-        if last_post_time is None or (datetime.strptime(time_str, "%H:%M") - last_post_time) >= timedelta(minutes=10):
-            break  # Valid time with at least 10-minute gap found
-    schedule.every().day.at(time_str).do(post_random_tweet, client=client)
-    logging.info(f"Scheduled tweet for {time_str}")
-    return datetime.strptime(time_str, "%H:%M")
+def schedule_daily_tweets(client):
+    """Schedule all daily tweets at once with proper spacing"""
+    last_time = None
+    for _ in range(15):
+        next_time = get_next_time(last_time)
+        schedule.every().day.at(next_time.strftime("%H:%M")).do(post_random_tweet, client=client)
+        logging.info(f"Scheduled tweet for {next_time.strftime('%H:%M')}")
+        last_time = next_time
 
 def post_random_tweet(client):
     """Generate and post a tweet about a random topic."""
@@ -85,15 +77,27 @@ def post_random_tweet(client):
     except Exception as e:
         logging.error(f"Error in post_random_tweet: {e}")
 
+def post_now(client):
+    """Immediate posting function"""
+    try:
+        topic = random.choice(TOPICS)
+        tweet_content = generate_tweet(topic)
+        if tweet_content:
+            client.create_tweet(text=tweet_content)
+            logging.info(f"Immediate tweet posted: {tweet_content}")
+    except Exception as e:
+        logging.error(f"Immediate post error: {e}")
+
 def run_bot():
-    """Main bot running function."""
+    """Main bot running function"""
     client = authenticate()
     if client:
         logging.info("Starting Twitter Bot")
-        last_post_time = None  # Initialize outside the loop
-        for _ in range(15):
-            last_post_time = schedule_next_tweet(client, last_post_time) 
-        while True:
+        schedule_daily_tweets(client)
+        
+        # Keep running until all scheduled jobs are done
+        start_time = datetime.now()
+        while datetime.now() < start_time + timedelta(hours=14):  # Max 14h runtime
             schedule.run_pending()
             time.sleep(60)
     else:

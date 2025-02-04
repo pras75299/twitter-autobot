@@ -2,15 +2,22 @@ name: Twitter Autobot
 
 on:
   schedule:
-    - cron: "0 */1 * * *" # Runs every hour
-    - cron: "30 */1 * * *" # Runs 30 minutes after every hour
-    - cron: "0 3,5,7,9,11,13,15,17,19,21,23 * * *" # Runs at odd hours
-
-  workflow_dispatch: # Allows manual execution from GitHub Actions UI
+    - cron: "50 7 * * *" # Main daily schedule (7:50 AM UTC)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Select mode (scheduled/immediate)"
+        required: true
+        default: "scheduled"
+        type: choice
+        options:
+          - scheduled
+          - immediate
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    timeout-minutes: 840 # 14 hours for scheduled mode
 
     steps:
       - name: Checkout repository
@@ -22,8 +29,7 @@ jobs:
           python-version: "3.9"
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run Twitter bot
         env:
@@ -33,7 +39,16 @@ jobs:
           ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
           BEARER_TOKEN: ${{ secrets.BEARER_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          CLIENT_ID: ${{ secrets.CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
         run: |
-          python main.py
+          if [ "${{ inputs.mode }}" = "immediate" ]; then
+            echo "Starting immediate posting mode (5 tweets with 2-minute gaps)"
+            for i in {1..5}; do
+              python -c "from schedule_tweets import post_random_tweet; from auth import authenticate; client = authenticate(); post_random_tweet(client)"
+              if [ $i -ne 5 ]; then
+                sleep 120
+              fi
+            done
+          else
+            echo "Starting regular scheduled mode"
+            python main.py
+          fi
