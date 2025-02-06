@@ -5,6 +5,8 @@ import logging
 from generate_tweet import generate_tweet
 from datetime import datetime, timedelta
 from auth import authenticate
+from pytz import timezone
+IST = timezone('Asia/Kolkata')
 
 # Configure logging
 logging.basicConfig(
@@ -36,30 +38,59 @@ TOPICS = [
 
 def get_next_time(last_post_time):
     """Calculate next post time with minimum 10-minute gap within 8AM-10PM window"""
+    now = datetime.now(IST)
+    
     if last_post_time is None:
-        # Start at 8 AM today
-        base_time = datetime.now().replace(hour=8, minute=0, second=0, microsecond=0)
-        if datetime.now() > base_time:
-            # If current time is past 8AM, start immediately with minimum gap
-            return datetime.now() + timedelta(minutes=10)
-        return base_time
-    else:
-        # Add random interval between 10-60 minutes
-        return last_post_time + timedelta(minutes=random.randint(10, 60))
-
-    # Ensure posts stay within 8AM-10PM window
-    next_time = max(next_time, next_time.replace(hour=8, minute=0, second=0))
-    next_time = min(next_time, next_time.replace(hour=22, minute=0, second=0))
+        # Start at next 8 AM if current time < 8 AM
+        base_time = now.replace(hour=8, minute=0, second=0, microsecond=0)
+        if now < base_time:
+            return base_time
+        # Otherwise start with minimum gap
+        return now + timedelta(minutes=10)
+    
+    # Calculate next time with random interval
+    next_time = last_post_time + timedelta(minutes=random.randint(10, 60))
+    
+    # Clamp to 8AM-10PM window
+    next_day = next_time + timedelta(days=1)
+    earliest = next_time.replace(hour=8, minute=0, second=0, microsecond=0)
+    latest = next_time.replace(hour=22, minute=0, second=0, microsecond=0)
+    
+    if next_time > latest:
+        # If past 10PM, move to next day 8AM
+        return earliest + timedelta(days=1)
+    elif next_time < earliest:
+        # If before 8AM, move to 8AM same day
+        return earliest
     return next_time
+
+
+def post_immediate_tweets(client):
+    """Post 5 tweets with 2-minute gaps"""
+    from time import sleep
+    for _ in range(5):
+        try:
+            post_random_tweet(client)
+            sleep(120)  # 2-minute gap
+        except Exception as e:
+            logging.error(f"Immediate posting failed: {e}")
+
 
 def schedule_daily_tweets(client):
     """Schedule all daily tweets at once with proper spacing"""
     last_time = None
+    scheduled_times = []
+    
+    # Generate all 15 times first
     for _ in range(15):
         next_time = get_next_time(last_time)
-        schedule.every().day.at(next_time.strftime("%H:%M")).do(post_random_tweet, client=client)
-        logging.info(f"Scheduled tweet for {next_time.strftime('%H:%M')}")
+        scheduled_times.append(next_time)
         last_time = next_time
+
+    # Schedule each time
+    for st in scheduled_times:
+        schedule.every().day.at(st.strftime("%H:%M")).do(post_random_tweet, client=client)
+        logging.info(f"Scheduled tweet for {st.strftime('%Y-%m-%d %H:%M')}")
 
 def post_random_tweet(client):
     """Generate and post a tweet about a random topic."""
