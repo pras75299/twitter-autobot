@@ -2,7 +2,8 @@ name: Twitter Autobot
 
 on:
   schedule:
-    - cron: "30 2 * * *" # 8:00 AM IST (2:30 AM UTC)
+    # Run every day at 2:30 AM UTC (8:00 AM IST)
+    - cron: "30 2 * * *"
   workflow_dispatch:
     inputs:
       mode:
@@ -17,7 +18,7 @@ on:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 840 # 14 hours coverage for 8AM-10PM IST window
+    timeout-minutes: 900 # 15 hours to ensure full coverage
 
     steps:
       - name: Checkout repository
@@ -41,11 +42,13 @@ jobs:
           ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
           BEARER_TOKEN: ${{ secrets.BEARER_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TZ: "Asia/Kolkata" # Set timezone to IST
         run: |
           if [ "${{ inputs.mode }}" = "immediate" ]; then
-            echo "Starting immediate posting mode (5 tweets with 2-minute gaps)"
+            echo "Starting immediate posting mode (5 tweets with 5-minute gaps)"
             python -c "from schedule_tweets import post_immediate_tweets; from auth import authenticate; post_immediate_tweets(authenticate())"
           else
             echo "Starting regular scheduled mode (15 tweets between 8AM-10PM IST)"
-            python main.py
+            # Run with explicit timezone setting
+            TZ='Asia/Kolkata' python main.py
           fi
