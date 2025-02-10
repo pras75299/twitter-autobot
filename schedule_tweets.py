@@ -30,11 +30,7 @@ TOPICS = [
     "Coding Best Practices",
     "Developer Productivity",
     "Programming Humor",
-    "Tech Career Advice",
-    "Mobile Development",
     "Blockchain",
-    "Cloud Computing",
-    "DevOps",
 ]
 
 
