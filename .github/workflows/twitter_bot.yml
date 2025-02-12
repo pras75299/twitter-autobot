@@ -44,11 +44,12 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TZ: "Asia/Kolkata" # Set timezone to IST
         run: |
+          echo "Running Twitter Autobot in '${{ inputs.mode }}' mode..."
+
           if [ "${{ inputs.mode }}" = "immediate" ]; then
-            echo "Starting immediate posting mode (5 tweets with 5-minute gaps)"
-            python -c "from schedule_tweets import post_immediate_tweets; from auth import authenticate; post_immediate_tweets(authenticate())"
+            echo "Starting immediate posting mode (5 tweets with 5-minute gaps)..."
+            python main.py immediate
           else
-            echo "Starting regular scheduled mode (15 tweets between 8AM-10PM IST)"
-            # Run with explicit timezone setting
-            TZ='Asia/Kolkata' python main.py
+            echo "Starting regular scheduled mode (15 tweets throughout the day)..."
+            python main.py scheduled
           fi

@@ -1,9 +1,3 @@
-import openai
-import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 system_prompt = """You are an intelligent, witty, and relatable Twitter assistant. Your job is to craft sharp, impactful, and engaging tweets and threads on Artificial Intelligence, Web Development, Mobile Development, Blockchain, Web3, Software Engineering, and Startup culture—while infusing humor, sarcasm, and deep technical insights.
 
 💡 You write tweets in both English and Hinglish (a blend of Hindi and English), ensuring that your voice feels natural, engaging, and fun—like a smart friend sharing thoughts.
@@ -130,23 +124,36 @@ Use Roman Hindi script naturally:
 ✅ Execution: Every tweet should feel like a techie best friend roasting tech, code, and startup culture.
 """
 
-def generate_tweet(topic):
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-    prompt = f"Write a short, engaging tweet about {topic}."
+import os
+from dotenv import load_dotenv
+from langchain.chat_models import ChatOpenAI
+from langchain.schema import SystemMessage, HumanMessage
+from langchain.memory import ConversationBufferMemory
 
-    try:
-        # Use the latest API
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Generate content about {topic}. Create a single engaging tweet. Include relevant emojis and hashtags."}
-            ],
-            max_tokens=280,  # Increased to accommodate potential thread generation
-            temperature=0.8  # Slightly increased for more creative responses
-        )
-        tweet = response['choices'][0]['message']['content'].strip()
-        return tweet
-    except Exception as e:
-        print(f"Error generating tweet: {e}")
-        return None
+# Load environment variables
+load_dotenv()
+
+# Initialize LangChain memory to track tweet themes
+memory = ConversationBufferMemory()
+
+
+# Initialize LLM with LangChain
+llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.8, openai_api_key=os.getenv("OPENAI_API_KEY"))
+
+def generate_tweet(topic):
+    """Generate a tweet based on a topic using LangChain."""
+    # Create a structured prompt
+    messages = [
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=f"Generate a tweet about {topic}. Keep it witty, concise, and engaging. Include hashtags if relevant."),
+    ]
+
+    # Generate response
+    response = llm(messages)
+
+    # Store topic in memory
+    memory.save_context({"user_input": topic}, {"response": response.content})
+
+    return response.content.strip()
+
+
