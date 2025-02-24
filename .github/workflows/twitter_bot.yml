@@ -42,6 +42,7 @@ jobs:
           ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
           BEARER_TOKEN: ${{ secrets.BEARER_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TARGET_USERNAMES: ${{ secrets.TARGET_USERNAMES }}
           TZ: "Asia/Kolkata" # Set timezone to IST
         run: |
           if [ "${{ inputs.mode }}" = "immediate" ]; then

@@ -151,3 +151,47 @@ def generate_tweet(topic):
     except Exception as e:
         print(f"Error generating tweet: {e}")
         return None
+
+
+def generate_tweet_from_inspiration(inspiration_text):
+    """
+    Given an inspiring tweet text, ask OpenAI to craft a witty, engaging tweet
+    that builds on the idea.
+    """
+    prompt = f"Based on the following tweet: \"{inspiration_text}\", craft a witty and engaging tweet that builds on the idea."
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=280,
+            temperature=0.8
+        )
+        tweet = response['choices'][0]['message']['content'].strip().strip('"').strip("'")
+        return tweet
+    except Exception as e:
+        print(f"Error generating inspired tweet: {e}")
+        return None
+
+def generate_sarcastic_comment(original_text):
+    """
+    Given an original tweet text, generate a sarcastic and witty comment.
+    """
+    prompt = f"Write a sarcastic and witty comment on the following tweet: \"{original_text}\". Ensure the comment is engaging and humorous."
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=100,
+            temperature=0.9
+        )
+        comment = response['choices'][0]['message']['content'].strip().strip('"').strip("'")
+        return comment
+    except Exception as e:
+        print(f"Error generating sarcastic comment: {e}")
+        return None
