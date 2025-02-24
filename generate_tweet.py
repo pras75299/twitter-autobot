@@ -146,6 +146,7 @@ def generate_tweet(topic):
             temperature=0.8  # Slightly increased for more creative responses
         )
         tweet = response['choices'][0]['message']['content'].strip()
+        tweet = tweet.strip('"').strip("'")
         return tweet
     except Exception as e:
         print(f"Error generating tweet: {e}")
