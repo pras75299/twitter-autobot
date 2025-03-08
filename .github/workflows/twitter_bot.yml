@@ -14,11 +14,25 @@ on:
         options:
           - scheduled
           - immediate
+      action:
+        description: "Action to perform (run/stop)"
+        required: true
+        default: "run"
+        type: choice
+        options:
+          - run
+          - stop
+      keep_alive:
+        description: "Keep running until explicitly stopped"
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     timeout-minutes: 900 # 15 hours to ensure full coverage
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'run') }}
 
     steps:
       - name: Checkout repository
@@ -42,13 +56,54 @@ jobs:
           ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
           BEARER_TOKEN: ${{ secrets.BEARER_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TARGET_USERNAMES: ${{ secrets.TARGET_USERNAMES }}
           TZ: "Asia/Kolkata" # Set timezone to IST
+          KEEP_ALIVE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.keep_alive == 'true' }}
         run: |
-          if [ "${{ inputs.mode }}" = "immediate" ]; then
-            echo "Starting immediate posting mode (5 tweets with 5-minute gaps)"
-            python -c "from schedule_tweets import post_immediate_tweets; from auth import authenticate; post_immediate_tweets(authenticate())"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ github.event.inputs.mode }}" = "immediate" ]; then
+              echo "Starting immediate posting mode (5 tweets with 5-minute gaps)"
+              python -c "from schedule_tweets import post_immediate_tweets; from auth import authenticate; post_immediate_tweets(authenticate())"
+            else
+              echo "Starting regular scheduled mode (15 tweets between 8AM-10PM IST)"
+              # Add keep_alive flag to ensure it runs until stopped
+              if [ "${{ github.event.inputs.keep_alive }}" = "true" ]; then
+                echo "Running in keep-alive mode until manually stopped"
+                while true; do
+                  TZ='Asia/Kolkata' python main.py
+                  # Check for stop signal file
+                  if [ -f ".github/workflows/stop_signal" ]; then
+                    echo "Stop signal detected, terminating workflow"
+                    rm -f ".github/workflows/stop_signal"
+                    break
+                  fi
+                  echo "Completed cycle, waiting before next run..."
+                  sleep 300  # Wait 5 minutes before next run
+                done
+              else
+                # Run once
+                TZ='Asia/Kolkata' python main.py
+              fi
+            fi
           else
-            echo "Starting regular scheduled mode (15 tweets between 8AM-10PM IST)"
-            # Run with explicit timezone setting
+            # Regular scheduled run
             TZ='Asia/Kolkata' python main.py
           fi
+
+  stop-bot:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'stop' }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Create stop signal
+        run: |
+          mkdir -p .github/workflows
+          echo "stop" > .github/workflows/stop_signal
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .github/workflows/stop_signal
+          git commit -m "Create stop signal [skip ci]"
+          git push
